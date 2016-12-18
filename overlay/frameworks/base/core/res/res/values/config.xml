@@ -443,4 +443,9 @@
 
     <!-- Mask to use when checking skb mark defined in config_networkWakeupPacketMark above. -->
     <integer name="config_networkWakeupPacketMask">0x80000000</integer>
+   
+    <!-- Should the pinner service pin the Camera application? -->
+    <bool name="config_pinnerCameraApp">true</bool>
+
 </resources>
+
