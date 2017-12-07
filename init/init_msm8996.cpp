@@ -35,12 +35,14 @@
 #include <android-base/strings.h>
 
 #include "property_service.h"
-#include "vendor_init.h"
+#include <android-base/logging.h>
 
 using android::base::GetProperty;
 using android::base::ReadFileToString;
 using android::base::Trim;
 using android::init::property_set;
+namespace android {
+namespace init {
 
 char const *heapminfree;
 char const *heapmaxfree;
@@ -99,6 +101,8 @@ void check_device()
 void vendor_load_properties()
 {
     std::string platform;
+
+    LOG(INFO) << __func__ << "\n";
 
     platform = GetProperty("ro.board.platform", "");
     if (platform != ANDROID_TARGET)
