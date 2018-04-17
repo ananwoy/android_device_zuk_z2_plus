@@ -590,6 +590,7 @@ etc/firmware/a225p5_pm4.fw
 etc/firmware/leia_pfp_470.fw
 etc/firmware/cpp_firmware_v1_5_0.fw
 etc/firmware/cpp_firmware_v1_2_0.fw
+vendor/etc/audio_tuning_mixer.txt
 etc/firmware/a530v1_pm4.fw
 etc/firmware/a530_zap.b00
 etc/firmware/a540_gpmu.fw2
@@ -657,3 +658,4 @@ framework/qcrilhook.jar
 framework/com.qti.dpmframework.jar
 framework/QtiTelephonyServicelibrary.jar
 framework/com.quicinc.cne.jar
+

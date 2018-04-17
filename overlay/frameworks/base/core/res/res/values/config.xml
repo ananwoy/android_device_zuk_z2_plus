@@ -500,8 +500,8 @@
     <integer name="config_proximityCheckTimeout">800</integer>
     <bool name="config_proximityCheckOnWakeEnabledByDefault">true</bool> -->
 
-    <!-- Whether home button can wake device
-    <bool name="config_homeCanWake">true</bool> -->
+    <!-- Whether home button can wake device -->
+    <add-resource type="bool" name="config_homeCanWake">true</add-resource>
 
     <!-- Stop listening to the fingerprint reader when NON-WAKEUP proximity sensor is covered & screen is off.
          config_proximityCheckOnWake must be true. -->
