@@ -158,7 +158,8 @@ PRODUCT_PACKAGES += \
     libdisplayconfig \
     liboverlay \
     libtinyxml \
-    libdisplayconfig
+    libdisplayconfig \
+    libqdMetaData.system
 
 # Doze mode
 PRODUCT_PACKAGES += \
