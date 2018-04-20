@@ -139,8 +139,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     camera.msm8996 \
     libmm-qcamera \
-    LegendCamera \
-    mm-qcamera-app 	
+    Camera2 \
 
 # Connectivity Engine support (CNE)
 PRODUCT_PACKAGES += \
