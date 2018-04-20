@@ -156,9 +156,9 @@ PRODUCT_PACKAGES += \
     memtrack.msm8996 \
     libdisplayconfig \
     liboverlay \
+    libqdMetaData.system \
     libtinyxml \
-    libdisplayconfig \
-    libqdMetaData.system
+    libgenlock
 
 # Doze mode
 PRODUCT_PACKAGES += \
