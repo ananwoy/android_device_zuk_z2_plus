@@ -31,6 +31,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.0-impl
 
+# Camera
+PRODUCT_PACKAGES += \
+    android.hardware.camera.provider@2.4-impl
+
 #Display
 PRODUCT_PACKAGES += \
     android.hardware.graphics.allocator@2.0-impl \
