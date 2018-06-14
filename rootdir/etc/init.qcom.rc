@@ -28,73 +28,177 @@ import init.qcom.power.rc
 import init.qcom.usb.rc
 
 on early-init
-    mkdir /firmware 0771 system system
-    mkdir /bt_firmware 0771 system system
+    mount debugfs debugfs /sys/kernel/debug
+    chmod 0755 /sys/kernel/debug
+    chown root system /dev/kmsg
+    chmod 0620 /dev/kmsg
+
     symlink /data/tombstones /tombstones
-    mkdir /dsp 0771 media media
+
+    # ZRAM setup
+    write /sys/block/zram0/comp_algorithm lz4
+    write /proc/sys/vm/page-cluster 0
 
 on init
-
-
     # Set permissions for persist partition
-    mkdir /persist 0771 system system
+    mkdir /persist 0771 root system
 
     symlink /sdcard /storage/sdcard0
 
+    # Create cgroup mount point for memory
+    mkdir /sys/fs/cgroup/memory/bg 0750 root system
+    write /sys/fs/cgroup/memory/bg/memory.swappiness 140
+    write /sys/fs/cgroup/memory/bg/memory.move_charge_at_immigrate 1
+    chown root system /sys/fs/cgroup/memory/bg/tasks
+    chmod 0660 /sys/fs/cgroup/memory/bg/tasks
+
     write /sys/module/qpnp_rtc/parameters/poweron_alarm 1
 
+on fs
+    wait /dev/block/platform/soc/${ro.boot.bootdevice}
+    symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
+    mount_all fstab.qcom
+
+on late-fs
+    # boot time fs tune
+    write /sys/block/sda/queue/iostats 0
+    write /sys/block/sda/queue/scheduler cfq
+    write /sys/block/sda/queue/iosched/slice_idle 0
+    write /sys/block/sda/queue/read_ahead_kb 2048
+    write /sys/block/sda/queue/nr_requests 256
+    write /sys/block/dm-0/queue/read_ahead_kb 2048
+    write /sys/block/dm-1/queue/read_ahead_kb 2048
+
+on post-fs-data
+    mkdir /data/vendor/misc 01771 system system
+
+    # Create directory used by display clients
+    mkdir /data/vendor/display 0770 system graphics
+
+    # Create directory used by media clients
+    mkdir /data/vendor/media 0770 mediacodec media
+
+    # Create directories for fingerprint
+    mkdir /data/misc/stargate 0770 system system
+    mkdir /data/misc/stargate/bg_estimation 0770 system system
+    mkdir /data/misc/stargate/calib_test 0770 system system
+    mkdir /data/misc/stargate/database 0770 system system
+
+    # Create directory for tftp
+    mkdir /data/vendor/tombstones 0771 system system
+
+    # Create folder for mm-qcamera-daemon
+    mkdir /data/misc/camera 0770 camera camera
+    mkdir /data/vendor/camera 0770 camera camera
+
+    mkdir /data/media 0770 media_rw media_rw
+    chown media_rw media_rw /data/media
+
+    mkdir /data/vendor/ramdump 0771 root system
+    mkdir /data/vendor/bluetooth 0770 bluetooth bluetooth
+    mkdir /data/vendor/ramdump/bluetooth 0770 bluetooth bluetooth
+
+    # Create the directories used by the Wireless subsystem
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
+
+    # Create netmgr log dir
+    mkdir /data/vendor/netmgr 0770 radio radio
+    chmod 0770 /data/vendor/netmgr
+
+    # Create the directories used by CnE subsystem
+    mkdir /data/connectivity 0771 system system
+    chown system system /data/connectivity
+
+    # Create directory used by audio subsystem
+    mkdir /data/vendor/misc/audio 0770 audio audio
+
+    # Create directory for audio delta files
+    mkdir /data/vendor/misc/audio/acdbdata 0770 media audio
+    mkdir /data/vendor/misc/audio/acdbdata/delta 0770 media audio
+
+    # Create directory for radio
+    mkdir /data/vendor/radio 0770 system radio
+
+    # Create directories for Location services
+    mkdir /data/vendor/location 0770 gps gps
+    mkdir /data/vendor/location/mq 0770 gps gps
+    mkdir /data/vendor/location/xtwifi 0770 gps gps
+
+    # SSC/SLPI sensors
+    mkdir /persist/sensors
+    chown root system /persist/sensors
+    chmod 0775 /persist/sensors
+    chown root system /persist/sensors/sensors_settings
+    chmod 0664 /persist/sensors/sensors_settings
+    chown root system /persist/sensors/sns.reg
+    chmod 0664 /persist/sensors/sns.reg
+    chown root system /persist/PRSensorData.txt
+    chmod 0660 /persist/PRSensorData.txt
+    chown root system /persist/PSensor3cm_ct.txt
+    chmod 0660 /persist/PSensor3cm_ct.txt
+
+    # /dev/sensors only supports an ioctl to get the current SLPI timestamp;
+    # allow the sensors daemon to perform this as non-root
+    chown root system /dev/sensors
+    chmod 0660 /dev/sensors
+
+    # Create /data/time folder for time-services
+    mkdir /data/time/ 0700 system system
+
+    setprop vold.post_fs_data_done 1
+
+    # Create PERFD deamon related dirs
+    mkdir /data/vendor/perfd 0770 root system
+    chmod 2770 /data/vendor/perfd
+    rm /data/vendor/perfd/default_values
+
+    # NFC local data and nfcee xml storage
+    mkdir /data/nfc 0770 nfc nfc
+    mkdir /data/nfc/param 0770 nfc nfc
+
+    # Create IOP  deamon related dirs
+    mkdir /data/vendor/iop 0770 root system
+
+    # Mark the copy complete flag to not completed
+    write /data/vendor/radio/copy_complete 0
+    chown radio radio /data/vendor/radio/copy_complete
+    chmod 0660 /data/vendor/radio/copy_complete
+
+    # File flags for prebuilt ril db file
+    write /data/vendor/radio/prebuilt_db_support 1
+    chown radio radio /data/vendor/radio/prebuilt_db_support
+    chmod 0400 /data/vendor/radio/prebuilt_db_support
+    write /data/vendor/radio/db_check_done 0
+    chown radio radio /data/vendor/radio/db_check_done
+    chmod 0660 /data/vendor/radio/db_check_done
+
 on early-boot
-    # set RLIMIT_MEMLOCK to 64MB
+    # Set RLIMIT_MEMLOCK to 64MB
     setrlimit 8 67108864 67108864
 
-    # set aggressive read ahead during boot up.
-    write /sys/block/dm-0/queue/read_ahead_kb 2048
-    write /sys/block/sda/queue/read_ahead_kb 2048
-    write /sys/block/sde/queue/read_ahead_kb 2048
-
     # Allow subsystem (modem etc) debugging
-    write /sys/module/subsystem_restart/parameters/enable_debug ${persist.sys.ssr.enable_debug}
-    write /sys/module/pil_msa/parameters/pbl_mba_boot_timeout_ms ${persist.sys.mba_boot_timeout}
-    write /sys/module/pil_msa/parameters/modem_auth_timeout_ms ${persist.sys.modem_auth_timeout}
-    write /sys/module/peripheral_loader/parameters/proxy_timeout_ms ${persist.sys.pil_proxy_timeout}
     write /sys/kernel/boot_adsp/boot 1
     write /sys/kernel/boot_slpi/boot 1
     chown root audio /sys/kernel/boot_adsp/boot
+
+    # SSR setup
+    write /sys/bus/msm_subsys/devices/subsys0/restart_level "related"
+    write /sys/bus/msm_subsys/devices/subsys1/restart_level "related"
+    write /sys/bus/msm_subsys/devices/subsys2/restart_level "related"
+    write /sys/bus/msm_subsys/devices/subsys3/restart_level "related"
+    write /sys/bus/msm_subsys/devices/subsys4/restart_level "related"
+    write /sys/bus/msm_subsys/devices/subsys5/restart_level "related"
+
 
     # Create directory used by display clients
      mkdir /data/vendor/display 0770 system graphics
     
     mkdir /data/vendor 0770 system system
     mkdir /data/vendor/misc 0770 system system
-
-
-on fs
-    wait /dev/block/platform/soc/${ro.boot.bootdevice}
-    symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
-    mount_all fstab.qcom
-    swapon_all fstab.qcom
-
-    # Keeping following partitions outside fstab file. As user may not have
-    # these partition flashed on the device. Failure to mount any partition in fstab file
-    # results in failure to launch late-start class.
-
-    wait /dev/block/bootdevice/by-name/cache
-    mount ext4 /dev/block/bootdevice/by-name/cache /cache nosuid nodev barrier=1
-
-    wait /dev/block/bootdevice/by-name/persist
-    mount ext4 /dev/block/bootdevice/by-name/persist /persist nosuid nodev barrier=1
-    mkdir /persist/data 0700 system system
-    mkdir /persist/bms 0700 root system
-    restorecon_recursive /persist
-
-    wait /dev/block/bootdevice/by-name/dsp
-    mount ext4 /dev/block/bootdevice/by-name/dsp /dsp nosuid nodev barrier=1
-
-    wait /dev/block/bootdevice/by-name/modem
-    mount vfat /dev/block/bootdevice/by-name/modem /firmware ro shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337
-
-    wait /dev/block/bootdevice/by-name/bluetooth
-    mount vfat /dev/block/bootdevice/by-name/bluetooth /bt_firmware ro shortname=lower,uid=1002,gid=3002,dmask=227,fmask=337
 
 on boot
 
@@ -281,6 +385,10 @@ on boot
     mkdir /persist/time 0770 system system
     mkdir /persist/rfs 0770 system system
     mkdir /persist/hlos_rfs 0770 system system
+  
+    # Access permission for smartPA
+    chmod 0666 /dev/i2c-3
+    chmod 0666 /dev/i2c-9
 
     # Create NETMGR daemon socket area
     mkdir /dev/socket/netmgr 0750 radio radio
@@ -358,210 +466,22 @@ on boot
     # Allow access for WLAN firmware
     chown system system /sys/module/cnss_common/parameters/bdwlan_file
 
-# msm specific files that need to be created on /data
-on post-fs-data
-    mkdir /tombstones/modem 0771 system system
-    mkdir /tombstones/lpass 0771 system system
-    mkdir /tombstones/wcnss 0771 system system
-    mkdir /tombstones/dsps 0771 system system
-    mkdir /persist/data/sfs 0700 system system
-    mkdir /persist/data/tz 0700 system system
-    mkdir /persist/qc_senseid 0700 system system
-    mkdir /persist/bms 0700 root system
-    restorecon_recursive /persist
-    mkdir /data/misc/dts 0770 media audio
-    mkdir /persist/display 0770 system graphics
-    mkdir /data/usf 0700 system system
-    mkdir /data/misc/qvop 0660 system system
-    mkdir /data/misc/audio_pp 0771 media audio
+    on property:sys.boot_completed=1
+    # Enable ZRAM on boot_complete
+    swapon_all fstab.qcom
 
-    # Sensors
-    # Allow access to sensors device attributes
-    chown system system /sys/class/sensors/MPU6050-accel/enable
-    chown system system /sys/class/sensors/MPU6050-accel/poll_delay
-    chown system system /sys/class/sensors/MPU6050-gyro/enable
-    chown system system /sys/class/sensors/MPU6050-gyro/poll_delay
-    chown system system /sys/class/sensors/apds9930-light/enable
-    chown system system /sys/class/sensors/apds9930-light/poll_delay
-    chown system system /sys/class/sensors/apds9930-proximity/enable
-    chown system system /sys/class/sensors/apds9930-proximity/poll_delay
+    # end boot time fs tune
+    write /sys/block/sda/queue/read_ahead_kb 128
+    write /sys/block/sda/queue/nr_requests 128
+    write /sys/block/dm-0/queue/read_ahead_kb 128
+    write /sys/block/dm-1/queue/read_ahead_kb 128
+    write /sys/block/sda/queue/iostats 1
 
-    chown system system /sys/module/msm_core/parameters/polling_interval
-    chown system system /sys/module/msm_core/parameters/disabled
-    chown system system /sys/kernel/debug/msm_core/enable
-    chown system system /sys/kernel/debug/msm_core/ptable   
+    # CPE fw_name used by sound trigger HAL
+    chown media audio /sys/kernel/wcd_cpe0/fw_name
 
-    # Create directories for Fingerprint
-    mkdir /data/vendor/misc/qti_fp 0770 system system
-    mkdir /data/vendor/misc/qti_fp/bg_estimation 0770 system system
-    mkdir /data/vendor/misc/qti_fp/calib_test 0770 system system
-    mkdir /data/vendor/misc/qti_fp/database 0770 system system
-
-    # Create directory for TZ Apps
-    mkdir /data/misc/qsee 0770 system system
-
-    # Create directory for tftp
-    mkdir /data/vendor/tombstones 0771 system system
-
-    # Create folder for mm-qcamera-daemon
-    mkdir /data/misc/camera 0770 camera camera
-
-    mkdir /data/media 0770 media_rw media_rw
-    chown media_rw media_rw /data/media
-
-    # Create directory for tftp
-    mkdir /data/vendor/tombstones 0771 system system
-    mkdir /data/vendor/tombstones/rfs 0771 system system
-
-    mkdir /data/misc/bluetooth 0770 bluetooth bluetooth
-
-    # Create the directories used by the Wireless subsystem
-    mkdir /data/misc/wifi 0770 wifi wifi
-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/wifi/wpa_supplicant 0770 wifi wifi
-    mkdir /data/misc/dhcp 0777 dhcp dhcp
-    chown dhcp dhcp /data/misc/dhcp
-
-    # Create port-bridge log dir
-    mkdir /data/misc/port_bridge 0770 radio radio
-    chmod 0770 /data/misc/port_bridge
-
-    # Create netmgr log dir
-    mkdir /data/vendor/netmgr 0770 radio radio
-    chmod 0770 /data/vendor/netmgr
-
-
-    # Create the directories used by CnE subsystem
-    mkdir /data/connectivity 0771 system system
-    chown system system /data/connectivity
-
-    # Create the directories used by DPM subsystem
-    mkdir /data/dpm 0771 system system
-    chown system system /data/dpm
-
-    mkdir /data/dpm/nsrm 0771 system system
-    chown system system /data/dpm/nsrm
-
-    # Create directory used by audio subsystem
-    mkdir /data/vendor/misc/audio 0770 audio audio
-
-    # Create directory for audio delta files
-    mkdir /data/vendor/misc/audio/acdbdata 0770 media audio
-    mkdir /data/vendor/misc/audio/acdbdata/delta 0770 media audio
-
-    # Create directory used by the DASH client
-    mkdir /data/misc/dash 0770 media audio
-
-    # Create directory used by media clients
-    mkdir /data/vendor/media 0770 mediacodec media
-
-    # Create directory used by display clients
-    mkdir /data/vendor/display 0770 system graphics
-
-    # Create directory for radio
-    mkdir /data/vendor/radio 0770 system radio
-
-    # Mounting of persist is moved to 'on emmc-fs' and 'on fs' sections
-    # We chown/chmod /persist again so because mount is run as root + defaults
-    chown system system /persist
-    chmod 0771 /persist
-    chmod 0664 /sys/devices/platform/msm_sdcc.1/polling
-    chmod 0664 /sys/devices/platform/msm_sdcc.2/polling
-    chmod 0664 /sys/devices/platform/msm_sdcc.3/polling
-    chmod 0664 /sys/devices/platform/msm_sdcc.4/polling
-
-    # Chown polling nodes as needed from UI running on system server
-    chown system system /sys/devices/platform/msm_sdcc.1/polling
-    chown system system /sys/devices/platform/msm_sdcc.2/polling
-    chown system system /sys/devices/platform/msm_sdcc.3/polling
-    chown system system /sys/devices/platform/msm_sdcc.4/polling
-
-    # Create the symlink to qcn wpa_supplicant folder for ar6000 wpa_supplicant
-    mkdir /data/system 0775 system system
-
-    #symlink /data/misc/wifi/wpa_supplicant /data/system/wpa_supplicant
-    # Create directories for Location services
-    mkdir /data/vendor/location 0770 gps gps
-    mkdir /data/vendor/location/mq 0770 gps gps
-    mkdir /data/vendor/location/xtwifi 0770 gps gps
- 
-    # Create directory from IMS services
-    mkdir /data/shared 0755
-    chown system system /data/shared
-
-    # Create directory for FOTA
-    mkdir /data/fota 0771
-    chown system system /data/fota
-
-    # SSC/SLPI sensors
-    mkdir /persist/sensors
-    chown root system /persist/sensors
-    chmod 0775 /persist/sensors
-    chown root system /persist/sensors/sensors_settings
-    chmod 0664 /persist/sensors/sensors_settings
-    chown root system /persist/sensors/sns.reg
-    chmod 0664 /persist/sensors/sns.reg
-    chown root system /persist/PRSensorData.txt
-    chmod 0660 /persist/PRSensorData.txt
-    chown root system /persist/PSensor3cm_ct.txt
-    chmod 0660 /persist/PSensor3cm_ct.txt
-
-    # /dev/sensors only supports an ioctl to get the current SLPI timestamp;
-    # allow the sensors daemon to perform this as non-root
-    chown root system /dev/sensors
-    chmod 0660 /dev/sensors
-
-    # Create /data/vendor/time folder for time-services
-    mkdir /data/vendor/time/ 0700 system system
-    symlink /data/vendor/time /data/time
-    mkdir /data/audio/ 0770 media audio
-
-    # Create a folder for audio delta files
-    mkdir /data/audio/acdbdata 0770 media audio
-    mkdir /data/audio/acdbdata/delta 0770 media audio
-    setprop vold.post_fs_data_done 1
-
-    # Create a folder for SRS to be able to create a usercfg file
-    mkdir /data/data/media 0770 media media
-
-    # Create FM dir for patchdownloader
-    mkdir /data/misc/fm 0770 system system
-    chmod 0770 /data/misc/fm
-
-    # RIDL data
-    mkdir /data/misc/SelfHost/ 0710 system shell
-    mkdir /data/misc/SelfHost/QCLogs/ 2750 system shell
-    mkdir /data/misc/SelfHost/QCLogs/temp/ 0700 system shell
-    mkdir /data/misc/SelfHost/storage/ 0700 system shell
-    mkdir /data/misc/SelfHost/Running/ 2750 system shell
-    mkdir /data/misc/SelfHost/socket/ 2770 system system
-
-    # Create PERFD deamon related dirs
-    mkdir /data/vendor/perfd 0770 root system
-    chmod 2770 /data/vendor/perfd
-    rm /data/vendor/perfd/default_values
-
-    # NFC local data and nfcee xml storage
-    mkdir /data/nfc 0770 nfc nfc
-    mkdir /data/nfc/param 0770 nfc nfc
-
-
-    # Create IOP  deamon related dirs
-    mkdir /data/vendor/iop 0770 root system
-
-
-    # Mark the copy complete flag to not completed
-    write /data/vendor/radio/copy_complete 0
-    chown radio radio /data/vendor/radio/copy_complete
-    chmod 0660 /data/vendor/radio/copy_complete
-
-    # File flags for prebuilt ril db file
-    write /data/vendor/radio/prebuilt_db_support 1
-    chown radio radio /data/vendor/radio/prebuilt_db_support
-    chmod 0400 /data/vendor/radio/prebuilt_db_support
-    write /data/vendor/radio/db_check_done 0
-    chown radio radio /data/vendor/radio/db_check_done
-    chmod 0660 /data/vendor/radio/db_check_done
+    on property:persist.env.fastdorm.enabled=true
+    setprop persist.radio.data_no_toggle 1
 
 service ril-daemon2 /vendor/bin/hw/rild -c 2
     class main
@@ -581,11 +501,6 @@ service readfem /vendor/bin/readfem
     user root
     group root oem_2950
     oneshot
-
-service qvop-daemon /system/bin/qvop-daemon
-    class late_start
-    user system
-    group system drmrpc
 
 # start up peripheral manager
 service per_mgr system/bin/pm-service
