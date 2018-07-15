@@ -293,10 +293,6 @@
     <!--  Define optional package verifier name -->
     <string name="config_optionalPackageVerifierName" translatable="false">seemp.service</string>
 
-    <!-- Whether a software navigation bar should be shown. NOTE: in the future this may be
-        autodetected from the Configuration. -->
-    <bool name="config_showNavigationBar">true</bool>
-
     <!-- Enable overlay for all location components. -->
     <bool name="config_enableNetworkLocationOverlay" translatable="false">true</bool>
     <bool name="config_enableFusedLocationOverlay" translatable="false">true</bool>
