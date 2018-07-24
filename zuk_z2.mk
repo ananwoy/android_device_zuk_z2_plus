@@ -24,6 +24,13 @@ $(call inherit-product-if-exists, vendor/zuk/z2_plus/z2_plus-vendor.mk)
 # Overlays
 DEVICE_PACKAGE_OVERLAYS += $(LOCAL_PATH)/overlay
 
+# Telephony packages
+PRODUCT_PACKAGES += \
+    ims-ext-common \
+    telephony-ext
+
+PRODUCT_BOOT_JARS += \
+    telephony-ext
 
 # Permissions
 PRODUCT_COPY_FILES += \

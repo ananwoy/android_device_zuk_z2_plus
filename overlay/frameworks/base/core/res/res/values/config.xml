@@ -281,7 +281,7 @@
     <string name="config_persistentDataPackageName" translatable="false">com.google.android.gms</string>
 
     <!--  Define optional package verifier name -->
-    <string name="config_optionalPackageVerifierName" translatable="false">seemp.service</string>
+    <add-resource type="string" name="config_optionalPackageVerifierName" translatable="false">seemp.service</add-resource>
 
     <!-- Enable overlay for all location components. -->
     <bool name="config_enableNetworkLocationOverlay" translatable="false">true</bool>

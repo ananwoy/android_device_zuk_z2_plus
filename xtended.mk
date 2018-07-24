@@ -15,6 +15,7 @@
 # Inherit from those products. Most specific first.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+$(call inherit-product, vendor/xtended/config/common_full_phone.mk)
 
 # Inherit from z2_plus device
 $(call inherit-product, device/zuk/z2_plus/zuk_z2.mk)
@@ -37,3 +38,5 @@ TARGET_VENDOR := zuk
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BUILD_FINGERPRINT="ZUK/z2_plus/z2_plus:7.0/NRD90M/2.5.412_170428:user/release-keys" \
     PRIVATE_BUILD_DESC="z2_plus-user 7.0 NRD90M 2.5.412_170428 release-keys"
+
+export XTENDED_BUILD_TYPE=OFFICIAL

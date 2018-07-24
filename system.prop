@@ -22,6 +22,7 @@ persist.vendor.bt.enable.splita2dp=false
 vendor.audio.tunnel.encode=false
 vendor.voice.path.for.pcm.voip=true
 persist.vendor.audio.speaker.prot.enable=true
+ro.xtended.version = x9.5-OFFICIAL
 
 # Bluetooth
 bt.max.hfpclient.connections=1
